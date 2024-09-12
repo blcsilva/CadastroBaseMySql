@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Text.RegularExpressions;
-using MySql.Data.MySqlClient;
 
 class Program
 {
     static void Main()
     {
+        // Configurar o banco de dados (criar tabelas se não existirem)
+        BancoDeDados.ConfigurarBancoDeDados();
+
         // Declaração das variáveis
         string nome;
         int idade;
@@ -15,6 +17,10 @@ class Program
         string cidade;
         string cep;
         DateTime dataNascimento;
+        string email;
+        string telefone;
+        string estado;
+        string pais;
 
         // Solicitação e leitura dos dados
         Console.Write("Digite seu nome: ");
@@ -30,6 +36,10 @@ class Program
 
         cep = LerCEP();
         dataNascimento = LerDataNascimento();
+        email = LerEmail();
+        telefone = LerTelefone();
+        estado = LerEstado();
+        pais = LerPais();
 
         // Criação da string concatenada com quebras de linha
         string resultado =
@@ -40,13 +50,17 @@ class Program
             $"CPF: {cpf}\n" +
             $"Cidade: {cidade}\n" +
             $"CEP: {cep}\n" +
-            $"Data de Nascimento: {dataNascimento:dd/MM/yyyy}";
+            $"Data de Nascimento: {dataNascimento:dd/MM/yyyy}\n" +
+            $"Email: {email}\n" +
+            $"Telefone: {telefone}\n" +
+            $"Estado: {estado}\n" +
+            $"Pais: {pais}";
 
         // Exibição do resultado
         Console.WriteLine(resultado);
 
         // Gravação dos dados no banco de dados
-        GravarDadosNoBanco(nome, idade, sexo, rg, cpf, cidade, cep, dataNascimento);
+        BancoDeDados.GravarDados(nome, idade, sexo, rg, cpf, cidade, cep, dataNascimento, email, telefone, estado, pais);
     }
 
     static int LerIdade()
@@ -151,6 +165,74 @@ class Program
         }
     }
 
+    static string LerEmail()
+    {
+        while (true)
+        {
+            Console.Write("Digite seu e-mail: ");
+            string email = Console.ReadLine();
+            if (Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            {
+                return email;
+            }
+            else
+            {
+                Console.WriteLine("E-mail inválido. Por favor, insira um e-mail válido.");
+            }
+        }
+    }
+
+    static string LerTelefone()
+    {
+        while (true)
+        {
+            Console.Write("Digite seu telefone (somente números e formato (00) 00000-0000): ");
+            string telefone = Console.ReadLine();
+            if (Regex.IsMatch(telefone, @"^\d{2} \d{5}-\d{4}$"))
+            {
+                return AplicarMascaraTelefone(telefone);
+            }
+            else
+            {
+                Console.WriteLine("Telefone inválido. Por favor, use o formato (00) 00000-0000.");
+            }
+        }
+    }
+
+    static string LerEstado()
+    {
+        while (true)
+        {
+            Console.Write("Digite seu estado: ");
+            string estado = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                return estado;
+            }
+            else
+            {
+                Console.WriteLine("Estado inválido. Por favor, insira um estado válido.");
+            }
+        }
+    }
+
+    static string LerPais()
+    {
+        while (true)
+        {
+            Console.Write("Digite seu país: ");
+            string pais = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(pais))
+            {
+                return pais;
+            }
+            else
+            {
+                Console.WriteLine("País inválido. Por favor, insira um país válido.");
+            }
+        }
+    }
+
     static string AplicarMascaraRG(string rg)
     {
         // Assumindo que o RG pode ter 7 dígitos e opcionalmente um dígito verificador
@@ -169,39 +251,9 @@ class Program
         return $"{cep.Substring(0, 5)}-{cep.Substring(5, 3)}";
     }
 
-    static void GravarDadosNoBanco(string nome, int idade, char sexo, string rg, string cpf, string cidade, string cep, DateTime dataNascimento)
+    static string AplicarMascaraTelefone(string telefone)
     {
-        // String de conexão com o banco de dados
-        string connectionString = "Server=localhost;Database=nome_do_banco;User ID=usuario;Password=senha;";
-
-        // Comando SQL para inserir os dados
-        string sql = @"INSERT INTO Pessoas (Nome, Idade, Sexo, RG, CPF, Cidade, CEP, DataNascimento) 
-                        VALUES (@Nome, @Idade, @Sexo, @RG, @CPF, @Cidade, @CEP, @DataNascimento)";
-
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            MySqlCommand command = new MySqlCommand(sql, connection);
-
-            // Adicionando parâmetros ao comando SQL
-            command.Parameters.AddWithValue("@Nome", nome);
-            command.Parameters.AddWithValue("@Idade", idade);
-            command.Parameters.AddWithValue("@Sexo", sexo);
-            command.Parameters.AddWithValue("@RG", rg);
-            command.Parameters.AddWithValue("@CPF", cpf);
-            command.Parameters.AddWithValue("@Cidade", cidade);
-            command.Parameters.AddWithValue("@CEP", cep);
-            command.Parameters.AddWithValue("@DataNascimento", dataNascimento);
-
-            try
-            {
-                connection.Open();
-                command.ExecuteNonQuery();
-                Console.WriteLine("Dados gravados com sucesso no banco de dados.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erro ao gravar dados: {ex.Message}");
-            }
-        }
+        // Assumindo o formato (00) 00000-0000
+        return $"({telefone.Substring(0, 2)}) {telefone.Substring(2, 5)}-{telefone.Substring(7, 4)}";
     }
 }
